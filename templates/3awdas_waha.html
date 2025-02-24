@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Traceur GPS</title>
+    <style>
+         
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #1E88E5, #64B5F6);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+            width: 350px;
+            text-align: center;
+            font-size: 16px;
+        }
+
+        h2 {
+            color: #1c27c4;
+            font-size: 1.8em;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+
+        label {
+            display: block;
+            font-size: 16px;
+            margin-bottom: 8px;
+            color: #333;
+            text-align: left;
+        }
+
+        
+        #empCode {
+            text-transform: uppercase;
+            letter-spacing: 0px;
+        }
+
+        input[type="text"], select {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            font-size: 16px;
+            outline: none;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        input[type="text"]:focus, select:focus {
+            border-color: #4CAF50;
+           
+        }
+
+        input[list="storeCodes"] {
+        width: 100%;
+        padding: 12px;
+        margin-bottom: 15px;
+        border-radius: 8px;
+        border: 1px solid #ccc;
+        font-size: 16px;
+        outline: none;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+}
+
+        input[list="storeCodes"]:focus {
+        border-color: #4CAF50;
+}
+
+        button {
+            width: 100%;
+            padding: 14px;
+            background-color: #4c09c7;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.2s;
+        }
+
+        button:hover {
+            background-color: #458ea0;
+            transform: scale(1.05);
+        }
+
+        button:disabled {
+            background-color: #c0c0c0;
+            cursor: not-allowed;
+        }
+
+        #status {
+            text-align: center;
+            font-size: 14px;
+            margin-top: 20px;
+            font-weight: bold;
+            color: #4CAF50;
+        }
+
+        .gps-form-container {
+            margin-top: 20px;
+        }
+
+        .gps-form-container input[type="text"] {
+            background-color: #f9f9f9;
+            color: #333;
+            font-weight: 500;
+        }
+
+        .gps-form-container input[type="text"]:read-only {
+            cursor: not-allowed;
+            background-color: #e6e6e6;
+        }
+
+        .gps-form-container select {
+            background-color: #f9f9f9;
+            color: #333;
+            font-weight: 500;
+        }
+
+        .gps-form-container select:focus {
+            background-color: #e6e6e6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Collection GPS Magasin</h2>
+        <form id="gpsForm" method="POST" action="/submit">
+            <div class="gps-form-container">
+                <label for="empCode" id="empCodeLabel">Code Employé :</label>
+                <input type="text" id="empCode" name="empCode" required onkeyup="updateStoreCodes()"><br>
+
+                <label for="storeCode">Code Magasin :</label>
+                <input list="storeCodes" id="storeCode" name="storeCode" required>
+                <datalist id="storeCodes">
+                    <option value="">Sélectionner un Code Magasin</option>
+                    {% for code in store_codes %}
+                        <option value="{{ code }}">{{ code }}</option>
+                    {% endfor %}
+                </datalist><br>
+
+                <button type="button" id="getCoordinatesButton" onclick="getLocation()">Obtenir les coordonnées GPS</button><br><br>
+
+                <label for="latitude">Latitude :</label>
+                <input type="text" id="latitude" name="latitude" readonly><br>
+
+                <label for="longitude">Longitude :</label>
+                <input type="text" id="longitude" name="longitude" readonly><br><br>
+
+                <button type="submit">Soumettre</button>
+            </div>
+        </form>
+
+        <p id="status"></p>
+    </div>
+
+    <script>
+        function updateStoreCodes() {
+            var empCode = document.getElementById('empCode').value;
+            if (empCode) {
+                fetch(`/get_stores?empCode=${empCode}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        var storeSelect = document.getElementById('storeCodes');
+                        storeSelect.innerHTML = '<option value="">Sélectionner un Code Magasin</option>';
+
+                        if (data.error) {
+                            alert(data.error);
+                        } else {
+                            data.forEach(function(storeCode) {
+                                var option = document.createElement('option');
+                                option.value = storeCode;
+                                option.textContent = storeCode;
+                                storeSelect.appendChild(option);
+                            });
+                        }
+                    })
+                    .catch(err => console.error('Erreur lors de la récupération des codes magasins :', err));
+            }
+        }
+
+        function getLocation() {
+            const button = document.getElementById("getCoordinatesButton");
+            button.disabled = true; // Disable the button
+            button.style.backgroundColor = "#c0c0c0"; // Make the button appear grayed out
+
+            document.getElementById("status").innerText = "Calibrating... Please wait 15 seconds.";
+
+            let countdown = 15;
+            const statusElement = document.getElementById("status");
+
+            const countdownInterval = setInterval(function() {
+                statusElement.innerText = `Calibrating... ${countdown} seconds remaining.`;
+                countdown--;
+
+                if (countdown < 0) {
+                    clearInterval(countdownInterval);
+                    getGPSCoordinates(); // Retrieve coordinates after countdown ends
+                }
+            }, 1000);
+        }
+
+        function getGPSCoordinates() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(function(position) {
+                    document.getElementById("latitude").value = position.coords.latitude;
+                    document.getElementById("longitude").value = position.coords.longitude;
+                    document.getElementById("status").innerText = "Coordonnées capturées !";
+                }, function() {
+                    document.getElementById("status").innerText = "Erreur lors de l'obtention de la position.";
+                });
+            } else {
+                alert("La géolocalisation n'est pas supportée par ce navigateur.");
+            }
+        }
+    </script>
+</body>
+</html>
