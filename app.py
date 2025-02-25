@@ -12,7 +12,7 @@ SPREADSHEET_ID = '1oqfsCsFxC2MOUAVxoErtMdwbM7UgP10IkBw78fL7FIc'  # Replace with 
 scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
 
 # Path to your local Excel file containing store codes
-EXCEL_FILE_PATH = 'C:\\Users\\yassine\\Desktop\\flask_gps_tracker\\scratch\\storecodes.xlsx'
+EXCEL_FILE_PATH = 'storecodes.xlsx'
 
 # Function to read store codes from the local Excel file and filter based on employee code
 def get_store_codes(employee_code=None):
