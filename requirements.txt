@@ -12,6 +12,7 @@ et_xmlfile==2.0.0
 executing==2.2.0
 Flask==3.1.0
 Flask-Cors==5.0.0
+gunicorn
 google-api-core==2.24.1
 google-api-python-client==2.161.0
 google-auth==2.38.0
