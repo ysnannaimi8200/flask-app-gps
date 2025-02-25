@@ -1,19 +1,15 @@
 from flask import Flask, render_template, request, jsonify
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
-from flask import Flask, render_template, request, jsonify
 import pandas as pd
-from flask import flash, redirect, url_for
+import os
+import json
+
 app = Flask(__name__)
 
-
-# Define the path to your Google API credentials and your Google Sheet ID
-SERVICE_ACCOUNT_FILE = r'C:\Users\yassine\Desktop\flask_gps_tracker\scratch\gps.json'
+# Define your Google Sheet ID
 SPREADSHEET_ID = '1oqfsCsFxC2MOUAVxoErtMdwbM7UgP10IkBw78fL7FIc'  # Replace with your actual spreadsheet ID
 scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
-# Initialize Google Sheets client
-
-
 
 # Path to your local Excel file containing store codes
 EXCEL_FILE_PATH = 'C:\\Users\\yassine\\Desktop\\flask_gps_tracker\\scratch\\storecodes.xlsx'
@@ -29,10 +25,20 @@ def get_store_codes(employee_code=None):
     else:
         # Return all store codes if no employee code is specified
         store_codes = df['Store Code'].tolist()
-    return store_codes 
+    return store_codes
 
+# Function to initialize Google Sheets client using environment variable
 def init_google_sheets():
-    creds = ServiceAccountCredentials.from_json_keyfile_name(SERVICE_ACCOUNT_FILE, scope)
+    # Load the JSON from the environment variable
+    service_account_json = os.getenv("SERVICE_ACCOUNT_JSON")
+    if not service_account_json:
+        raise ValueError("SERVICE_ACCOUNT_JSON environment variable not found")
+
+    # Parse the JSON string
+    service_account_data = json.loads(service_account_json)
+
+    # Use the parsed JSON to create credentials
+    creds = ServiceAccountCredentials.from_json_keyfile_dict(service_account_data, scope)
     client = gspread.authorize(creds)
     sheet = client.open_by_key(SPREADSHEET_ID).sheet1  # Access the first sheet
     return sheet
@@ -66,10 +72,9 @@ def submit():
         sheet = init_google_sheets()
         sheet.append_row([emp_code, store_code, latitude, longitude])
         return 'donnes enregistre'
-        #return jsonify({"success": True, "message": "Data saved successfully!"})
     except Exception as e:
-       print(f"Error: {e}")
-      #  return jsonify({"success": False, "message": "Failed to save data."})
-        
+        print(f"Error: {e}")
+        return jsonify({"success": False, "message": "Failed to save data."}), 500
+
 if __name__ == '__main__':
     app.run(debug=True)
