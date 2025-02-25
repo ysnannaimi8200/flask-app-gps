@@ -12,7 +12,7 @@ SPREADSHEET_ID = '1oqfsCsFxC2MOUAVxoErtMdwbM7UgP10IkBw78fL7FIc'  # Replace with 
 scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
 
 # Path to your local Excel file containing store codes
-EXCEL_FILE_PATH = 'storecodes.xlsx'
+EXCEL_FILE_PATH = 'storecodes.xlsx'  # Ensure this file is in your repository
 
 # Function to read store codes from the local Excel file and filter based on employee code
 def get_store_codes(employee_code=None):
@@ -77,4 +77,6 @@ def submit():
         return jsonify({"success": False, "message": "Failed to save data."}), 500
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    # Use the PORT environment variable if available, otherwise default to 5000
+    port = int(os.getenv('PORT', 5000))
+    app.run(host='0.0.0.0', port=port)
